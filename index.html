@@ -1717,18 +1717,23 @@ Your style:
 
     showTyping();
 
-   try {
+try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: 'claude-3-sonnet-20240229',
-                    max_tokens: 1000,
+                    model: 'gemini-1.5-flash',
                     messages: chatHistory
                 })
             });
 
             const data = await response.json();
+            
+            if (data.content) {
+                addMessage(data.content, false);
+            } else {
+                throw new Error(data.error || 'Response error');
+            }
 
             if (data.content) {
                 addMessage(data.content, false);
