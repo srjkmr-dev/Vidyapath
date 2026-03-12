@@ -1,28 +1,27 @@
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const API_KEY = process.env.GEMINI_API_KEY;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const userMessage = req.body.messages[req.body.messages.length - 1].content;
+
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(req.body),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: userMessage }] }]
+      })
     });
 
     const data = await response.json();
+    if (data.error) return res.status(400).json({ error: data.error.message });
 
-    if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.message || 'Error' });
-    }
+    const aiText = data.candidates[0].content.parts[0].text;
+    res.status(200).json({ content: aiText });
 
-    // Frontend ko sirf kaam ka text bhejna
-    res.status(200).json({ content: data.content[0].text });
   } catch (error) {
-    res.status(500).json({ error: 'Server error: ' + error.message });
+    res.status(500).json({ error: "Gemini Error: " + error.message });
   }
 }
